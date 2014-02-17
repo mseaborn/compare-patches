@@ -3,8 +3,20 @@ import re
 import sys
 
 
-def ParsePatch(filename):
-  lines = [line.rstrip('\n') for line in open(filename, 'r')]
+def MergeFilenames(filename1, filename2):
+  names = set()
+  if filename1 != '/dev/null':
+    assert filename1.startswith('a/')
+    names.add(filename1[2:])
+  if filename2 != '/dev/null':
+    assert filename2.startswith('b/')
+    names.add(filename2[2:])
+  assert len(names) == 1
+  return list(names)[0]
+
+
+def ParsePatch(patch_file):
+  lines = [line.rstrip('\n') for line in open(patch_file, 'r')]
 
   def MatchChar(char):
     def M(line):
@@ -23,9 +35,17 @@ def ParsePatch(filename):
       i += 1
     return tuple(got), i
 
+  filename = None
   hunks = []
   i = 0
   while i < len(lines):
+    m = re.match('--- (.*)', lines[i])
+    if m:
+      filename1 = m.group(1)
+      m = re.match('\+\+\+ (.*)', lines[i + 1])
+      filename2 = m.group(1)
+      filename = MergeFilenames(filename1, filename2)
+      i += 2
     if not lines[i].startswith('@@'):
       i += 1
       continue
@@ -36,7 +56,7 @@ def ParsePatch(filename):
       add, i = Matches(i, MatchChar('+'))
       if len(rem) == 0 and len(add) == 0:
         break
-      hunks.append((rem, add))
+      hunks.append((filename, (rem, add)))
   return hunks
 
 
@@ -58,19 +78,32 @@ def Diff(list1, list2):
 def Main(args):
   patch_file1 = args[0]
   patch_file2 = args[1]
-  patch1 = ParsePatch(patch_file1)
-  patch2 = ParsePatch(patch_file2)
+  patch_orig1 = ParsePatch(patch_file1)
+  patch_orig2 = ParsePatch(patch_file2)
+  patch1 = list(Diff(patch_orig1, patch_orig2))
+  patch2 = list(Diff(patch_orig2, patch_orig1))
 
   def Put(patch, dest_file):
     fh = open(dest_file, 'w')
     fh.write('%i patches\n' % len(patch))
-    for hunk in patch:
-      fh.write('\nPatch:\n')
-      WriteHunk(fh, hunk)
+
+    by_filename = {}
+    for filename, hunk in patch:
+      by_filename.setdefault(filename, []).append(hunk)
+
+    fh.write('\nSummary of files:\n')
+    for filename in sorted(by_filename.iterkeys()):
+      fh.write('  %s\n' % filename)
+
+    for filename, hunks in sorted(by_filename.iteritems()):
+      fh.write('\nFile %s:\n' % filename)
+      for hunk in hunks:
+        fh.write('\nPatch:\n')
+        WriteHunk(fh, hunk)
     fh.close()
 
-  Put(list(Diff(patch1, patch2)), 'out-before')
-  Put(list(Diff(patch2, patch1)), 'out-after')
+  Put(patch1, 'out-before')
+  Put(patch2, 'out-after')
 
 
 if __name__ == '__main__':
