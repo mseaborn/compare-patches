@@ -87,23 +87,22 @@ def Diff(list1, list2):
       yield item
 
 
-def Main(args):
-  patch_file1 = args[0]
-  patch_file2 = args[1]
+def ComparePatches(patch_file1, patch_file2, banner1='', banner2=''):
   patch_orig1 = ParsePatch(patch_file1)
   patch_orig2 = ParsePatch(patch_file2)
   patch1 = list(Diff(patch_orig1, patch_orig2))
   patch2 = list(Diff(patch_orig2, patch_orig1))
 
-  def Put(patch, dest_file):
+  def Put(patch, dest_file, banner):
     fh = open(dest_file, 'w')
+    fh.write(banner)
     fh.write('%i patches\n' % len(patch))
 
     by_filename = {}
     for filename, hunk in patch:
       by_filename.setdefault(filename, []).append(hunk)
 
-    fh.write('\nSummary of files:\n')
+    fh.write('\nSummary of files changed:\n')
     for filename in sorted(by_filename.iterkeys()):
       fh.write('  %s\n' % filename)
 
@@ -114,8 +113,15 @@ def Main(args):
         WriteHunk(fh, hunk)
     fh.close()
 
-  Put(patch1, 'out-before')
-  Put(patch2, 'out-after')
+  Put(patch1, 'out-before', banner1)
+  Put(patch2, 'out-after', banner2)
+
+
+def Main(args):
+  assert len(args) == 2
+  patch_file1 = args[0]
+  patch_file2 = args[1]
+  ComparePatches(patch_file1, patch_file2)
 
 
 if __name__ == '__main__':
