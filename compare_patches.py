@@ -15,6 +15,18 @@ def MergeFilenames(filename1, filename2):
   return list(names)[0]
 
 
+# Remove empty lines at the start and end of the patch, because they
+# are usually not important and are just the result of changes in
+# context.
+def CleanWhitespace(lines):
+  lines = list(lines)
+  while len(lines) > 0 and lines[0].strip() == '':
+    lines.pop(0)
+  while len(lines) > 0 and lines[-1].strip() == '':
+    lines.pop(-1)
+  return tuple(lines)
+
+
 def ParsePatch(patch_file):
   lines = [line.rstrip('\n') for line in open(patch_file, 'r')]
 
@@ -56,7 +68,7 @@ def ParsePatch(patch_file):
       add, i = Matches(i, MatchChar('+'))
       if len(rem) == 0 and len(add) == 0:
         break
-      hunks.append((filename, (rem, add)))
+      hunks.append((filename, (CleanWhitespace(rem), CleanWhitespace(add))))
   return hunks
 
 
