@@ -8,6 +8,8 @@ import compare_patches
 def Main(args):
   assert len(args) == 1
   merge_commit = args[0]
+  merge_commit = subprocess.check_output(['git', 'rev-parse',
+                                          merge_commit]).strip()
   parents = subprocess.check_output(
     ['git', 'log', '--no-walk', '--pretty=format:%P',
      merge_commit])
@@ -25,7 +27,6 @@ def Main(args):
     banner = top_banner
     banner += '%s the merge:\n\n' % this_side.capitalize()
     cmd = ['git', 'diff'] + commits
-    banner += ' '.join(cmd) + '\n\n'
 
     fh = open('tmp_%s.patch' % this_side, 'w')
     fh.write(banner)
@@ -34,6 +35,7 @@ def Main(args):
 
     banner += ('These are the patch hunks from %s the merge '
                'that do not also appear %s.\n\n' % (this_side, other_side))
+    banner += 'These patch hunks come from:\n%s\n\n' % ' '.join(cmd)
     return banner
 
   banner1 = Diff('before', 'after', [base, parents[0]])

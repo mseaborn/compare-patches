@@ -96,7 +96,7 @@ def ComparePatches(patch_file1, patch_file2, banner1='', banner2=''):
   def Put(patch, dest_file, banner):
     fh = open(dest_file, 'w')
     fh.write(banner)
-    fh.write('%i patches\n' % len(patch))
+    fh.write('%i patch hunks\n' % len(patch))
 
     by_filename = {}
     for filename, hunk in patch:
@@ -113,8 +113,8 @@ def ComparePatches(patch_file1, patch_file2, banner1='', banner2=''):
         WriteHunk(fh, hunk)
     fh.close()
 
-  Put(patch1, 'out-before', banner1)
-  Put(patch2, 'out-after', banner2)
+  Put(patch1, 'merge_compare_before.txt', banner1)
+  Put(patch2, 'merge_compare_after.txt', banner2)
 
 
 def Main(args):
