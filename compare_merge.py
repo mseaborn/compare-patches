@@ -8,9 +8,9 @@ import compare_patches
 
 def Main(args):
   assert len(args) == 1
-  merge_commit = args[0]
+  merge_commit_orig = args[0]
   merge_commit = subprocess.check_output(['git', 'rev-parse',
-                                          merge_commit]).strip()
+                                          merge_commit_orig]).strip()
   parents = subprocess.check_output(
     ['git', 'log', '--no-walk', '--pretty=format:%P',
      merge_commit])
@@ -19,7 +19,8 @@ def Main(args):
 
   base = subprocess.check_output(['git', 'merge-base'] + parents).strip()
 
-  top_banner = 'Examining merge commit %s\n%s\n\n' % (
+  top_banner = 'compare_merge %s\n\n' % merge_commit_orig
+  top_banner += 'Examining merge commit %s\n%s\n\n' % (
       merge_commit,
       subprocess.check_output(['git', 'log', '--no-walk',
                                '--pretty=format:("%s", %cd)', merge_commit]))
